@@ -13,6 +13,7 @@ function getAddress(publicKey) {
 }
 
 let keys = {}
+let balances = {}
 
 function generateKeys(count) {
 	for (let index = 0; index < count; index++) {
@@ -26,11 +27,13 @@ function generateKeys(count) {
 			address: `0x${toHex(address)}`,
 		}
 		
-		keys[`key${index}`] = keyObj
-	}
+		keys[`key${index}`] = keyObj;
+		balances[keyObj.address] = Math.floor(Math.random() * 100);
+ 	}
 	console.log(keys);
 
 	fs.writeFileSync("./keys.json", JSON.stringify(keys), 'utf-8');
+	fs.writeFileSync("./balance.json", JSON.stringify(balances), 'utf-8');
 }
 
 generateKeys(count);
