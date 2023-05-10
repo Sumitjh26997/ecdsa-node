@@ -1,3 +1,4 @@
+const fs = require("fs");
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -6,11 +7,7 @@ const port = 3042;
 app.use(cors());
 app.use(express.json());
 
-const balances = {
-  "0x1": 100,
-  "0x2": 50,
-  "0x3": 75,
-};
+const balances = JSON.parse(fs.readFileSync('./balance.json', 'utf-8')); 
 
 app.get("/balance/:address", (req, res) => {
   const { address } = req.params;
