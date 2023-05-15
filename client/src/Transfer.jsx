@@ -2,8 +2,7 @@ import { useState } from "react";
 import server from "./server";
 import { keccak256 } from "ethereum-cryptography/keccak";
 import { utf8ToBytes, toHex } from "ethereum-cryptography/utils";
-import { secp256k1 } from "ethereum-cryptography/secp256k1";
-
+import * as secp256k1 from "ethereum-cryptography/secp256k1"
 
 function Transfer({ address, setBalance }) {
   const [sendAmount, setSendAmount] = useState("");
@@ -18,7 +17,7 @@ function Transfer({ address, setBalance }) {
 
 	async function signMessage(msg) {
     const message = hashMessage(msg);
-    return secp256k1.sign(message, privateKey);
+    return secp256k1.sign(message, privateKey, {recovered: true});
 	}
 
 	function getAddress(publicKey) {
@@ -27,10 +26,11 @@ function Transfer({ address, setBalance }) {
 		return hashedKey.slice(-20);
 	}
 
-	async function verifyKey(message, signature) {
+	async function verifyKey(message, signedMessage) {
 		const hashedMessage = hashMessage(JSON.stringify(message));
-		const pubKey = signature.recoverPublicKey(hashedMessage);
-		return `0x${toHex(getAddress(pubKey.toRawBytes()))}` === address;
+		const [signature, recoveryBit] = signedMessage;
+		const pubKey = secp256k1.recoverPublicKey(hashedMessage, signature, recoveryBit);
+		return `0x${toHex(getAddress(pubKey))}` === address;
 	}
 
   async function transfer(evt) {
@@ -43,21 +43,23 @@ function Transfer({ address, setBalance }) {
 				recipient,
 			};
 
-			const signature = await signMessage(JSON.stringify(payload));
+			const signedMessage = await signMessage(JSON.stringify(payload));
 
-			if(! await verifyKey(payload, signature)) {
+			if(!await verifyKey(payload, signedMessage)) {
 				alert("You are not the owner of the sender address");
 				throw new Error("You are not the owner of the sender address");
 			}
 
-			payload.signature = signature;
-
-      const {
-        data: { balance },
-      } = await server.post(`send`, payload);
-      setBalance(balance);
+			payload.messageHash = toHex(hashMessage(JSON.stringify(payload)));
+			payload.signature = signedMessage;
+			
+      const response = await server.post(`send`, payload);
+      setBalance(response.data.balance);
+			if (response.status === 200) {
+				alert(`${sendAmount} successfully transferred to ${recipient}`);
+			}
     } catch (ex) {
-      alert(ex.response.data.message);
+      alert(ex);
     }
   }
 
