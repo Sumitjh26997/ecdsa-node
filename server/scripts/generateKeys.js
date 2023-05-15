@@ -1,10 +1,8 @@
 const fs = require("fs");
-const {secp256k1} = require("ethereum-cryptography/secp256k1");
-const { utf8ToBytes, toHex } = require("ethereum-cryptography/utils");
+const secp256k1  = require("ethereum-cryptography/secp256k1");
+const { toHex } = require("ethereum-cryptography/utils");
 const { keccak256 } = require("ethereum-cryptography/keccak");
-console.log(process.argv)
 const count = process.argv[2];
-
 
 function getAddress(publicKey) {
 	const pubKey = publicKey.slice(1, publicKey.length);
